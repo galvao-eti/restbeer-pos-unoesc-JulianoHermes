@@ -12,18 +12,16 @@ namespace Application\Controller;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 
-class IndexController extends AbstractActionController
-{
-    public function indexAction()
-    {
+class IndexController extends AbstractActionController{
+
+    public function indexAction(){
         $beers = $this->getServiceLocator()
                       ->get('Application\Model\BeerTableGateway')
                       ->fetchAll();
         return new ViewModel(array('beers' => $beers));
     }
 
-    public function createAction()
-    {
+    public function createAction(){
         $form = $this->getServiceLocator()->get('Application\Form\Beer');
         $form->setAttribute('action', '/insert');
         $form->get('send')->setAttribute('value', 'Salvar');
@@ -31,10 +29,10 @@ class IndexController extends AbstractActionController
         return new ViewModel(['beerForm' => $form]);
     }
 
-    public function insertAction()
-    {
+    public function insertAction(){
         $form = $this->getServiceLocator()->get('Application\Form\Beer');
         $form->setAttribute('action', '/insert');
+        $form->get('send')->setAttribute('value', 'Salvar');
         $tableGateway = $this->getServiceLocator()->get('Application\Model\BeerTableGateway');
         $beer = new \Application\Model\Beer;
         $request = $this->getRequest();
@@ -53,6 +51,26 @@ class IndexController extends AbstractActionController
             }
         }
 
+        $id = (int) $this->params()->fromRoute('id', 0);
+        if ($id > 0) { //é uma atualização   
+            /* busca a entidade no banco de dados*/
+            $beer = $tableGateway->get($id);
+            /* preenche o formulário com os  dados do banco de dados*/
+            $form->bind($beer);
+            /* muda o texto do botão submit*/
+            $form->get('send')->setAttribute('value', 'Editar');
+        }
         return new ViewModel(['beerForm' => $form]);
+    }
+
+    public function deleteAction(){
+        $id = (int) $this->params()->fromRoute('id', 0);
+        if ($id == 0) {
+            throw new \Exception("Código obrigatório");
+        }
+        /* remove o registro e redireciona para a página inicial*/
+        $tableGateway = $this->getServiceLocator()->get('Application\Model\BeerTableGateway')->delete($id);
+        
+        return $this->redirect()->toUrl('/');
     }
 }
